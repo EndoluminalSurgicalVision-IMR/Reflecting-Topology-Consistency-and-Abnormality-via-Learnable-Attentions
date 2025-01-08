@@ -45,11 +45,7 @@ seed = 222
 torch.manual_seed(seed)  # cpu
 torch.cuda.manual_seed(seed)  # gpu
 np.random.seed(seed)  # numpy
-train_path = "/home/yuy/code/ATM_refine2409/feature/"
-val_path = "/home/yuy/code/ATM_refine2409/feature_val/"
-test_path = "/home/yuy/code/AIIB/anno_refine/feature/"
-top_train = "/home/yuy/code/ATM_refine2409/toplogy/"
-top_test = "/home/yuy/code/AIIB/anno_refine/toplogy/"
+
 epochs = 600
 
 DATA_PATHS = {
