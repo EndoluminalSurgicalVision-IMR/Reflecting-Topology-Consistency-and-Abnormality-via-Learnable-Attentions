@@ -111,7 +111,7 @@ def process_iteration_pycuda(skel, generation, xt, yt, zt, spacing, parent_map, 
         
         int first_x, first_y, first_z, second_x, second_y, second_z;
 
-        if (abs(minX - minX_skl) < abs(minY - minY_skl)) {
+        if (abs(minX - minX_skl) < abs(maxX - minX_skl)) {
             first_x = minX;
             first_y = minY;
             first_z = minZ;
@@ -387,6 +387,13 @@ def get_edge(parent_map,child_map):
     edge_feature = np.array(edge_feature)
     return edge,edge_feature
 def feature_extraction_cuda(skel,spacing, mask, parent_map, children_map, generation, trachea):
+    #Extract graph features using CUDA acceleration
+    # Returns:
+    #   feature (ndarray): (N,17) array of branch features (17 features per branch)
+    #   edge (ndarray): (E,2) array of edge connections (node indices)
+    #   edge_feature (ndarray): (E,) directional flags (1=forward, -1=reverse)
+    #   node_idx (ndarray): (N,) mapping to volume IDs (volume_value = idx+1)
+
     label_t = (skel == trachea).astype(np.uint8)
 
     xlt, xrt, ylt, yrt, zlt, zrt = find_bb_3D(label_t)
@@ -404,7 +411,6 @@ def feature_extraction_cuda(skel,spacing, mask, parent_map, children_map, genera
     node_idx = node_idx[idx_filter]
     pos_rank = rank(total[:, -3::])
     data_final = np.concatenate((total, pos_rank), axis=1)
-    data_raw = data_final.copy()
 
     # normalize
     for j in range(data_final.shape[1]):
@@ -424,7 +430,7 @@ def feature_extraction_cuda(skel,spacing, mask, parent_map, children_map, genera
     parent_map_new, children_map_new = parent_refine(parent_map, node_idx, parse2node)
     edge, edge_feature = get_edge(parent_map_new, children_map_new)
 
-    return data_final, edge, edge_feature, node_idx,data_raw
+    return data_final, edge, edge_feature, node_idx
 
 if __name__ == '__main__':
     skel, spacing, mask, parent_map, children_map, generation, trachea = None

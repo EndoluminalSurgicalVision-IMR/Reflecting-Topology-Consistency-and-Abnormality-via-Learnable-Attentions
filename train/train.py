@@ -5,22 +5,22 @@ Created on Tur Sep 12 11:25:42 2024
 @author: Li
 """
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import torch
 import torch.nn as nn
 from torch_geometric.loader import DataLoader
 import os
-import numpy as np
-from network import our_net
+import sys
 import time
 import shutil
-import sys
-import pickle
-from dataset import multitask_dataset
+from loss_functions import LabelSmoothCrossEntropyLoss
 
 sys.path.append("..")
-from loss_functions import LabelSmoothCrossEntropyLoss
 from utils import *
+from models.network import our_net
+from data_process.dataset import multitask_dataset
+from config.config import config, DATA_PATHS
+os.environ["CUDA_VISIBLE_DEVICES"] = config["gpu"]
+
 
 def calculate_loss(outputs, labels, mask_outlier, nodepair_labels):
     loss_function = LabelSmoothCrossEntropyLoss(smoothing=0.01)
@@ -41,22 +41,12 @@ def calculate_accuracy(output, labels):
     return np.sum((labels == preds).astype(np.uint8)) / labels.shape[0]
 
 
-seed = 222
+seed = config["seed"]
 torch.manual_seed(seed)  # cpu
 torch.cuda.manual_seed(seed)  # gpu
 np.random.seed(seed)  # numpy
-
-epochs = 600
-
-DATA_PATHS = {
-    "train": "",
-    "val": "",
-    "test": "",
-    "top_train": "",
-    "top_test": "",
-    "top_val": "",
-}
-SAVE_DIR_TEMPLATE = ""
+epochs = config["epochs"]
+SAVE_DIR_TEMPLATE = config["SAVE_DIR_TEMPLATE"]
 if not os.path.exists(SAVE_DIR_TEMPLATE):
     os.makedirs(SAVE_DIR_TEMPLATE)
 
@@ -75,8 +65,9 @@ pyfiles = [f for f in os.listdir('./') if f.endswith('.py')]
 for f in pyfiles:
     shutil.copy(f, os.path.join(SAVE_DIR_TEMPLATE, f))
 
-my_net = our_net(input_dim=15, num_classes1=6, num_classes2=21, num_classes3=134, dim=128, heads=4,
-                             mlp_dim=256, dim_head=32, dropout=0., trans_depth = 2, outlier_depth = 2)
+my_net = our_net(input_dim=config["input_dim"], num_classes1=config["num_classes1"], num_classes2=config["num_classes2"],
+                 num_classes3=config["num_classes3"], dim=config["dim"], heads=config["heads"], mlp_dim=config["mlp_dim"],
+                 dim_head = config["dim_head"], dropout= config["dropout"], trans_depth = config["trans_depth"], outlier_depth = config["outlier_depth"])
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 my_net = my_net.to(device)

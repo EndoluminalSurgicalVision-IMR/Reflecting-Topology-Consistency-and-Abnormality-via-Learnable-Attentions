@@ -189,7 +189,21 @@ def find_bb_3D(segmentation):
     return pos[0].min(), pos[0].max() + 1, pos[1].min(), pos[1].max() + 1, pos[2].min(), pos[2].max() + 1
 
 
-def tree_parse(path_label, path_skel,idx,save_path):
+def tree_parse(path_label: str, path_skel: str) -> tuple:
+    # According to bifurcation points, the binary segmentation of airway can be branched.
+    # Each branch is assigned a unique value in the volume.
+    #
+    # Returns:
+    # - spacing(tuple): Voxel spacing (dx, dy, dz) from nii header
+    # - parent_map(ndarray): NxN adjacency matrix, parent_map[i, j] = 1 indicates
+    #               branch j+1 is parent of branch i+1 (0-based index)
+    # - children_map (ndarray): NxN adjacency matrix for child relationships
+    # - generation (ndarray): (N,) array indicating branch generation in the airway tree.
+    # - trachea (int): indicating which branch correspond to the trachea.
+    # - tree_parsing_skel: The branched airway.
+    # - tree_parsing: The branched skeleton.
+
+
     label_nii = nibabel.load(path_label)
     skel_nii = nibabel.load(path_skel)
     spacing = skel_nii.header['pixdim'][1:4]
@@ -207,13 +221,6 @@ def tree_parse(path_label, path_skel,idx,save_path):
     #print("trachea_loc",trachea)
     tree_parsing = tree_parsing1(skeleton_parse, label,cd)
 
-    save_name_skel_parsing = save_path + idx + "_skel_parsing.nii.gz"
-    save_name_parse = save_path + idx + "_parse.nii.gz"
-
-    parse_nii = nibabel.Nifti1Image(tree_parsing.astype(np.int32), affine=label_nii.affine)
-    nibabel.save(parse_nii, save_name_parse)
-    skel_nii = nibabel.Nifti1Image(cd.astype(np.int32), affine=skel_nii.affine)
-    nibabel.save(skel_nii, save_name_skel_parsing)
 
     ad_matric = adjacent_map_cuda(skeleton,skeleton_parse,cd)
 
